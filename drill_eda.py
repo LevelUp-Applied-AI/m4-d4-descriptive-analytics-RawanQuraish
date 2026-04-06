@@ -1,73 +1,77 @@
-"""Core Skills Drill — Descriptive Analytics
-
-Compute summary statistics, plot distributions, and create a correlation
-heatmap for the sample sales dataset.
-
-Usage:
-    python drill_eda.py
-"""
-import os
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import os
 
 def compute_summary(df):
-    """Compute summary statistics for all numeric columns.
+    numeric_cols = df.select_dtypes(include='number').columns
 
-    Args:
-        df: pandas DataFrame with at least some numeric columns
+    summary_dict = {
+        'count': [],
+        'mean': [],
+        'median': [],
+        'std': [],
+        'min': [],
+        'max': []
+    }
 
-    Returns:
-        DataFrame containing count, mean, median, std, min, max
-        for each numeric column. Save the result to output/summary.csv.
-    """
-    # TODO: Compute descriptive statistics (count, mean, median, std, min, max)
-    #       for all numeric columns and save to output/summary.csv
-    pass
+    for col in numeric_cols:
+        summary_dict['count'].append(df[col].count())
+        summary_dict['mean'].append(df[col].mean())
+        summary_dict['median'].append(df[col].median())
+        summary_dict['std'].append(df[col].std())
+        summary_dict['min'].append(df[col].min())
+        summary_dict['max'].append(df[col].max())
 
+    summary_df = pd.DataFrame(summary_dict, index=numeric_cols).T
+    summary_df.index.name = 'statistic'
+
+    os.makedirs('output', exist_ok=True)
+
+    summary_df.to_csv('output/summary.csv')
+
+    return summary_df
 
 def plot_distributions(df, columns, output_path):
-    """Create a 2x2 subplot figure with histograms for the specified columns.
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    axes = axes.flatten()
 
-    Args:
-        df: pandas DataFrame
-        columns: list of 4 column names to plot (use numeric columns)
-        output_path: file path to save the figure (e.g., 'output/distributions.png')
+    for i, col in enumerate(columns):
+        sns.histplot(df[col], kde=True, ax=axes[i])
+        axes[i].set_title(col)
 
-    Returns:
-        None — saves the figure to output_path
-    """
-    # TODO: Create a 2x2 figure with sns.histplot (KDE overlay) for each column
-    #       Add titles, labels, and tight layout before saving
-    pass
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
 
 def plot_correlation(df, output_path):
-    """Compute Pearson correlation matrix and visualize as a heatmap.
+    numeric_cols = df.select_dtypes(include='number').columns
+    corr_matrix = df[numeric_cols].corr(method='pearson')
 
-    Args:
-        df: pandas DataFrame with numeric columns
-        output_path: file path to save the figure (e.g., 'output/correlation.png')
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap='coolwarm')
 
-    Returns:
-        None — saves the figure to output_path
-    """
-    # TODO: Compute the correlation matrix for numeric columns and
-    #       visualize it as an annotated Seaborn heatmap
-    pass
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+def summary_stats(df):
+    compute_summary(df)
 
-def main():
-    """Load data, compute summary, and generate all plots."""
-    os.makedirs("output", exist_ok=True)
+def distribution_plot(df, column):
+    plot_distributions(df, [column], f'output/{column}_distribution.png')
 
-    # TODO: Load the CSV from data/sample_sales.csv
-    # TODO: Call compute_summary and save the result
-    # TODO: Choose 4 numeric-friendly columns and call plot_distributions
-    # TODO: Call plot_correlation
-
+def correlation_heatmap(df):
+    plot_correlation(df, 'output/correlation.png')
 
 if __name__ == "__main__":
-    main()
+    df = pd.read_csv("data/sample_sales.csv")
+
+    compute_summary(df)
+    numeric_cols = df.select_dtypes(include='number').columns[:4]
+    plot_distributions(df, numeric_cols, 'output/distributions.png')
+
+    plot_correlation(df, 'output/correlation.png')
