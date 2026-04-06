@@ -23,7 +23,8 @@ def compute_summary(df):
         summary_dict['min'].append(df[col].min())
         summary_dict['max'].append(df[col].max())
 
-    summary_df = pd.DataFrame(summary_dict, index=numeric_cols)
+    summary_df = pd.DataFrame(summary_dict, index=numeric_cols).T
+    summary_df.index.name = 'statistic'
 
     os.makedirs('output', exist_ok=True)
 
@@ -32,9 +33,8 @@ def compute_summary(df):
     return summary_df
 
 def plot_distributions(df, columns, output_path):
-    
     fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-    axes = axes.flatten()  
+    axes = axes.flatten()
 
     for i, col in enumerate(columns):
         sns.histplot(df[col], kde=True, ax=axes[i])
@@ -47,13 +47,10 @@ def plot_distributions(df, columns, output_path):
     plt.close()
 
 def plot_correlation(df, output_path):
-    
     numeric_cols = df.select_dtypes(include='number').columns
-
     corr_matrix = df[numeric_cols].corr(method='pearson')
 
     plt.figure(figsize=(10, 8))
-
     sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap='coolwarm')
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -61,22 +58,20 @@ def plot_correlation(df, output_path):
     plt.tight_layout()
     plt.savefig(output_path)
     plt.close()
-
 def summary_stats(df):
-    pass
+    compute_summary(df)
 
 def distribution_plot(df, column):
-    pass
+    plot_distributions(df, [column], f'output/{column}_distribution.png')
 
 def correlation_heatmap(df):
-    pass
+    plot_correlation(df, 'output/correlation.png')
 
-# ----------------------------------
 if __name__ == "__main__":
     df = pd.read_csv("data/sample_sales.csv")
-    
 
     compute_summary(df)
     numeric_cols = df.select_dtypes(include='number').columns[:4]
     plot_distributions(df, numeric_cols, 'output/distributions.png')
+
     plot_correlation(df, 'output/correlation.png')
